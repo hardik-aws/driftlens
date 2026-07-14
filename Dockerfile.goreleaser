@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+# Used by GoReleaser (`dockers:` in .goreleaser.yaml): the driftlens binary is
+# prebuilt by GoReleaser and copied into the build context, so this file only
+# fetches the IaC tools and assembles the runtime image. For a from-source
+# local build, use ./Dockerfile instead.
+
+# ---- fetch terraform + terragrunt ----
+FROM alpine:3.20 AS tools
+ARG TARGETARCH
+ARG TERRAFORM_VERSION=1.15.8
+ARG TERRAGRUNT_VERSION=1.1.0
+RUN apk add --no-cache curl unzip \
+ && curl -fsSL -o /tmp/tf.zip \
+      "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip" \
+ && unzip /tmp/tf.zip -d /usr/local/bin \
+ && curl -fsSL -o /usr/local/bin/terragrunt \
+      "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_${TARGETARCH}" \
+ && chmod +x /usr/local/bin/terraform /usr/local/bin/terragrunt
+
+# ---- runtime ----
+FROM alpine:3.20
+# ca-certificates: provider/module downloads over HTTPS. git: git-sourced modules.
+RUN apk add --no-cache ca-certificates git
+COPY --from=tools /usr/local/bin/terraform /usr/local/bin/terraform
+COPY --from=tools /usr/local/bin/terragrunt /usr/local/bin/terragrunt
+COPY driftlens /usr/local/bin/driftlens
+ENTRYPOINT ["driftlens"]

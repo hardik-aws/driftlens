@@ -1,0 +1,7 @@
+/driftlens
+tfplan
+*.tfplan
+.terraform/
+/report/
+.DS_Store
+CLAUDE.md

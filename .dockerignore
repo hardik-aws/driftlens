@@ -1,0 +1,7 @@
+.git
+.github
+driftlens
+report
+*.md
+docs
+.DS_Store
